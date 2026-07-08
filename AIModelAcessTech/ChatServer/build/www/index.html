@@ -3,109 +3,373 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI聊天助手</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <title>AI聊天助手 - 离线预览</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f4f6fb;
+            color: #1f2937;
+        }
+
+        .app {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+        }
+
+        .sidebar {
+            background: #111827;
+            color: #f9fafb;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .status {
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #1f2937;
+            color: #cbd5e1;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .session {
+            padding: 12px;
+            border-radius: 8px;
+            background: #1f2937;
+            color: #e5e7eb;
+            font-size: 14px;
+        }
+
+        .main {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-width: 0;
+        }
+
+        .header {
+            height: 64px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .messages {
+            padding: 24px;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .empty {
+            margin: auto;
+            text-align: center;
+            color: #64748b;
+            line-height: 1.7;
+        }
+
+        .msg {
+            max-width: 760px;
+            padding: 13px 15px;
+            border-radius: 10px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .msg.user {
+            align-self: flex-end;
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .msg.assistant {
+            align-self: flex-start;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+
+        .composer {
+            padding: 16px 24px;
+            background: #ffffff;
+            border-top: 1px solid #e5e7eb;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 48px;
+            max-height: 140px;
+            resize: vertical;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 12px;
+            font: inherit;
+        }
+
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal {
+            width: min(720px, 100%);
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
+            overflow: hidden;
+        }
+
+        .modal-head {
+            padding: 18px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .model-grid {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .model-card {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            background: #ffffff;
+        }
+
+        .model-card.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .model-card strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .model-card span {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .modal-actions {
+            padding: 16px 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .secondary {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        @media (max-width: 760px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <!-- 顶部导航栏 -->
-        <header class="header">
-            <div class="header-left">
-                <div class="logo">
-                    <i class="fas fa-robot"></i>
-                    <span>AI聊天助手</span>
-                </div>
-                <button class="new-chat-btn" id="newChatBtn">
-                    <i class="fas fa-plus"></i>
-                    新建对话
-                </button>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand">AI聊天助手</div>
+            <div class="status">
+                当前为离线预览模式。页面不连接后端，只用于确认界面、模型选择和对话流程。
             </div>
-        </header>
-
-        <!-- 主内容区域 -->
-        <div class="main-content">
-            <!-- 左侧会话列表 -->
-            <aside class="sidebar">
+            <div>
+                <h3 style="font-size: 14px; margin-bottom: 10px;">会话</h3>
                 <div class="session-list" id="sessionList">
-                    <!-- 会话列表将通过JavaScript动态加载 -->
+                    <div class="session">暂无会话</div>
                 </div>
-            </aside>
+            </div>
+        </aside>
 
-            <!-- 右侧聊天区域 -->
-            <main class="chat-area">
-                <!-- 默认欢迎界面 -->
-                <div class="welcome-screen" id="welcomeScreen">
-                    <div class="welcome-content">
-                        <i class="fas fa-comments"></i>
-                        <h2>选择一个历史对话继续，或创建新的对话，开启您的AI之旅</h2>
-                        <button class="welcome-new-chat-btn" id="welcomeNewChatBtn">
-                            新建对话
-                        </button>
-                    </div>
+        <main class="main">
+            <header class="header">
+                <h1 id="title">请选择模型开始对话</h1>
+                <button id="newChatBtn">新建对话</button>
+            </header>
+
+            <section class="messages" id="messages">
+                <div class="empty">
+                    <h2>页面已离线加载成功</h2>
+                    <p>点击右上角“新建对话”，选择模型后即可预览聊天流程。</p>
                 </div>
+            </section>
 
-                <!-- 聊天界面 -->
-                <div class="chat-interface" id="chatInterface" style="display: none;">
-                    <!-- 聊天消息区域 -->
-                    <div class="messages-container" id="messagesContainer">
-                        <!-- 消息将通过JavaScript动态加载 -->
-                    </div>
-
-                    <!-- 输入区域 -->
-                    <div class="input-area">
-                        <div class="input-container">
-                            <textarea 
-                                id="messageInput" 
-                                placeholder="请输入您的消息...(Enter发送，Shift+Enter换行)"
-                                maxlength="2000"
-                            ></textarea>
-                            <div class="input-footer">
-                                <span class="char-count" id="charCount">0/2000</span>
-                                <button class="send-btn" id="sendBtn">
-                                    <i class="fas fa-paper-plane"></i>
-                                    发送
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
+            <section class="composer">
+                <textarea id="messageInput" placeholder="输入消息后点击发送，离线模式会返回一条预览回复"></textarea>
+                <button id="sendBtn">发送</button>
+            </section>
+        </main>
     </div>
 
-    <!-- 模型选择弹窗 -->
-    <div class="modal-overlay" id="modelModal" style="display: none;">
-        <div class="model-modal">
-            <div class="modal-header">
-                <h3>选择模型</h3>
-                <button class="close-btn" id="closeModal">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="modal-mask" id="modal">
+        <div class="modal">
+            <div class="modal-head">
+                <h2 style="font-size: 18px;">选择模型</h2>
+                <button class="secondary" id="closeBtn">关闭</button>
             </div>
-            <div class="modal-content">
-                <div class="model-grid" id="modelGrid">
-                    <!-- 模型列表将通过JavaScript动态加载 -->
-                </div>
-                <div class="modal-actions">
-                    <button class="cancel-btn" id="cancelBtn">取消</button>
-                    <button class="confirm-btn" id="confirmBtn">确定</button>
-                </div>
+            <div class="model-grid" id="modelGrid"></div>
+            <div class="modal-actions">
+                <button class="secondary" id="cancelBtn">取消</button>
+                <button id="confirmBtn" disabled>确定</button>
             </div>
         </div>
     </div>
 
-    <!-- 加载指示器 -->
-    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-        <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span>处理中...</span>
-        </div>
-    </div>
+    <script>
+        const models = [
+            { name: "deepseek-chat", desc: "DeepSeek 云端对话模型" },
+            { name: "gpt-4o-mini", desc: "OpenAI 轻量对话模型" },
+            { name: "gemini-2.0-flash", desc: "Google Gemini 快速响应模型" }
+        ];
 
-    <script src="script.js"></script>
+        let selectedModel = "";
+        let currentModel = "";
+        let sessionCount = 0;
+
+        const modal = document.getElementById("modal");
+        const modelGrid = document.getElementById("modelGrid");
+        const confirmBtn = document.getElementById("confirmBtn");
+        const title = document.getElementById("title");
+        const messages = document.getElementById("messages");
+        const sessionList = document.getElementById("sessionList");
+        const input = document.getElementById("messageInput");
+
+        function openModal() {
+            selectedModel = "";
+            confirmBtn.disabled = true;
+            renderModels();
+            modal.style.display = "flex";
+        }
+
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        function renderModels() {
+            modelGrid.innerHTML = "";
+            models.forEach((model) => {
+                const card = document.createElement("div");
+                card.className = "model-card";
+                card.innerHTML = `<strong>${model.name}</strong><span>${model.desc}</span>`;
+                card.onclick = () => {
+                    selectedModel = model.name;
+                    document.querySelectorAll(".model-card").forEach((node) => node.classList.remove("selected"));
+                    card.classList.add("selected");
+                    confirmBtn.disabled = false;
+                };
+                modelGrid.appendChild(card);
+            });
+        }
+
+        function createSession() {
+            if (!selectedModel) return;
+            currentModel = selectedModel;
+            sessionCount += 1;
+            title.textContent = `当前模型：${currentModel}`;
+            messages.innerHTML = "";
+            addMessage("assistant", `已创建离线预览会话。当前模型：${currentModel}\n\n真实聊天需要后端服务和 API key；这里先用于确认页面能正常加载和交互。`);
+            sessionList.innerHTML = `<div class="session">会话 ${sessionCount}<br>${currentModel}</div>`;
+            closeModal();
+        }
+
+        function addMessage(role, text) {
+            const div = document.createElement("div");
+            div.className = `msg ${role}`;
+            div.textContent = text;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+            if (!currentModel) {
+                openModal();
+                return;
+            }
+            input.value = "";
+            addMessage("user", text);
+            addMessage("assistant", `这是 ${currentModel} 的离线预览回复：我已经收到你的消息“${text}”。`);
+        }
+
+        document.getElementById("newChatBtn").onclick = openModal;
+        document.getElementById("closeBtn").onclick = closeModal;
+        document.getElementById("cancelBtn").onclick = closeModal;
+        document.getElementById("confirmBtn").onclick = createSession;
+        document.getElementById("sendBtn").onclick = sendMessage;
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
 </body>
 </html>

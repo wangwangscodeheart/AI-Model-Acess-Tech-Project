@@ -39,8 +39,6 @@ namespace ai_chat_sdk{
         void initProviders(const std::vector<std::shared_ptr<Config>>& configs);
         // 初始化模型提供者 - API模型提供者
         bool initAPIModelProviders(const std::string& modelName, const std::shared_ptr<APIConfig>& apiConfig);
-        // 初始化模型提供者 - Ollama模型提供者
-        bool initOllamaModelProviders(const std::string& modelName, const std::shared_ptr<OllamaConfig>& config);
 
     private:
         bool _initialized = false;        // 是否初始化

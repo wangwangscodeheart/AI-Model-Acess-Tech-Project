@@ -20,11 +20,6 @@ struct ServerConfig{
     std::string deepseekAPIKey;     // deepseek API Key
     std::string geminiAPIKey;       // gemini API Key
     std::string chatGPTAPIKey;      // chatGPT API Key
-
-    // Ollama
-    std::string ollamaModelName;    // Ollama模型名称
-    std::string ollamaModelDesc;    // Ollama模型描述
-    std::string ollamaEndpoint;     // Ollama API 地址
 };
 
 

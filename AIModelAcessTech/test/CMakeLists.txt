@@ -17,7 +17,6 @@ add_executable(testLLM testLLM.cpp
 ../sdk/src/DeepSeekProvider.cpp
 ../sdk/src/ChatGPTProvider.cpp
 ../sdk/src/GeminiProvider.cpp
-../sdk/src/OllamaLLMProvider.cpp
 ../sdk/src/DataManager.cpp
 ../sdk/src/SessionManager.cpp
 ../sdk/src/LLMManager.cpp

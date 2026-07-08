@@ -19,10 +19,6 @@ DEFINE_double(temperature, 0.7, "温度值，影响生成文本的随机性");
 DEFINE_int32(max_tokens, 2048, "最大token数");
 DEFINE_string(config_file, "./ChatServer.conf", "配置文件路径");
 // DEFINE_bool(version, false, "显示版本信息");
-// Ollama配置参数
-DEFINE_string(ollama_model_name, "", "Ollama模型名称");
-DEFINE_string(ollama_model_desc, "", "Ollama模型描述");
-DEFINE_string(ollama_endpoint, "", "Ollama API地址");
 
 // 版本号
 const std::string VERSION = "1.0.0";
@@ -51,16 +47,8 @@ bool validateConfig(ai_chat_server::ServerConfig& config) {
 
     // 验证至少有一个API密钥不为空
     if (config.deepseekAPIKey.empty() && config.chatGPTAPIKey.empty() && config.geminiAPIKey.empty()) {
-        ERR("错误: 至少需要提供一个有效的API密钥或Ollama模型配置");
+        ERR("错误: 至少需要提供一个有效的API密钥");
         return false;
-    }
-
-    // 验证Ollama配置参数
-    if (!config.ollamaModelName.empty()) {
-        if (config.ollamaModelDesc.empty() || config.ollamaEndpoint.empty()) {
-            ERR("错误: 如果提供了Ollama模型名称，则必须同时提供模型描述和端点");
-            return false;
-        }
     }
 
     return true;
@@ -121,10 +109,6 @@ int main(int argc, char** argv) {
         config.deepseekAPIKey = getEnvVar("deepseek_apikey");
         config.chatGPTAPIKey = getEnvVar("chatgpt_apikey");
         config.geminiAPIKey = getEnvVar("gemini_apikey_new");
-        // 从命令行参数获取Ollama配置
-        config.ollamaModelName = FLAGS_ollama_model_name;
-        config.ollamaModelDesc = FLAGS_ollama_model_desc;
-        config.ollamaEndpoint = FLAGS_ollama_endpoint;
 
         // 验证配置参数
         if (!validateConfig(config)) {
@@ -155,9 +139,6 @@ int main(int argc, char** argv) {
         INFO("  DeepSeek API Key: {}", (config.deepseekAPIKey.empty() ? "未设置" : "已设置"));
         INFO("  ChatGPT API Key: {}", (config.chatGPTAPIKey.empty() ? "未设置" : "已设置"));
         INFO("  Gemini API Key: {}", (config.geminiAPIKey.empty() ? "未设置" : "已设置"));
-        INFO("  Ollama 模型: {}", (config.ollamaModelName.empty() ? "未设置" : config.ollamaModelName));
-        INFO("  Ollama 模型描述: {}", (config.ollamaModelDesc.empty() ? "未设置" : config.ollamaModelDesc));
-        INFO("  Ollama 端点: {}", (config.ollamaEndpoint.empty() ? "未设置" : config.ollamaEndpoint));
         
         // 创建并启动ChatServer
         ai_chat_server::ChatServer server(config);

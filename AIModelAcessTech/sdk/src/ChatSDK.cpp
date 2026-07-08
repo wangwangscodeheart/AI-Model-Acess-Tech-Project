@@ -2,10 +2,8 @@
 #include "../include/DeepSeekProvider.h"
 #include "../include/ChatGPTProvider.h"
 #include "../include/GeminiProvider.h"
-#include "../include/OllamaLLMProvider.h"
 #include "../include/util/myLog.h"
 #include <memory>
-#include <unordered_set>
 
 
 
@@ -53,25 +51,6 @@ void ChatSDK::registerAllProvider(const std::vector<std::shared_ptr<Config>>& co
         INFO("gemini-2.0-flash provider registered successed");
     }
 
-    // Ollama接入本地模型---模型信息通过用户传递 configs
-    std::unordered_set<std::string> modelNames;
-    for(const auto& config : configs){
-        // config是不是OllamaConfig的一个对象呢
-        auto ollamaConfig = std::dynamic_pointer_cast<OllamaConfig>(config);
-        if(ollamaConfig){
-            auto modelName = ollamaConfig->_modelName;
-            if(modelNames.find(modelName) == modelNames.end()){
-                // 该模型还没有注册
-                modelNames.insert(modelName);
-
-                if(!_llmManager.isModelAvailable(modelName)){
-                    // 该模型还没有注册
-                    _llmManager.registerProvider(modelName, std::make_unique<OllamaLLMProvider>());
-                    INFO("OllamaLLMProvider {} registered successed", modelName);
-                }
-            }
-        }
-    }
 }
 
 // 初始化所有支持的模型
@@ -86,9 +65,6 @@ void ChatSDK::initProviders(const std::vector<std::shared_ptr<Config>>& configs)
             }else{
                 ERR("Model {} is not supported", apiConfig->_modelName);
             }
-        }else if(auto ollamaConfig = std::dynamic_pointer_cast<OllamaConfig>(config)){
-            // 初始化Ollama模型提供者
-            initOllamaModelProviders(ollamaConfig->_modelName, ollamaConfig);
         }else{
             ERR("Config {} is not supported", config->_modelName);
         }
@@ -125,40 +101,6 @@ bool ChatSDK::initAPIModelProviders(const std::string& modelName, const std::sha
     // 模型配置
     _modelConfigs[modelName] = apiConfig;
     INFO("ChatSDK::initAPIModelProviders: model {} init successed", modelName);
-    return true;
-}
-
-// 初始化模型提供者 - Ollama模型提供者
-bool ChatSDK::initOllamaModelProviders(const std::string& modelName, const std::shared_ptr<OllamaConfig>& ollamaConfig){
-    // 参数检测
-    if(modelName.empty()){
-        ERR("ChatSDK::initOllamaModelProviders: modelName is empty");
-        return false;
-    }
-    if(!ollamaConfig || ollamaConfig->_endpoint.empty()){
-        ERR("ChatSDK::initOllamaModelProviders: endpoint is empty");
-        return false;
-    }
-
-    // 初始化模型提供者
-    if(_llmManager.isModelAvailable(modelName)){
-        INFO("ChatSDK::initOllamaModelProviders: model {} is already available", modelName);
-        return true;
-    }
-
-    // 初始化模型
-    std::map<std::string, std::string> modelParams;
-    modelParams["model_name"] = modelName;
-    modelParams["model_desc"] = ollamaConfig->_modelDesc;
-    modelParams["endpoint"] = ollamaConfig->_endpoint;
-    if(!_llmManager.initModel(modelName, modelParams)){
-        ERR("ChatSDK::initOllamaModelProviders: init model {} failed", modelName);
-        return false;
-    }
-
-    // 模型配置
-    _modelConfigs[modelName] = ollamaConfig;
-    INFO("ChatSDK::initOllamaModelProviders: model {} init successed", modelName);
     return true;
 }
 

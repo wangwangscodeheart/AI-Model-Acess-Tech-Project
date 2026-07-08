@@ -33,15 +33,6 @@ struct APIConfig : public Config{
     std::string _apiKey;          // API密钥
 };
 
-// 通过Ollama接入本地模型---不需要apikey
-struct OllamaConfig : public Config{
-    std::string _modelName;       // 模型名称
-    std::string _modelDesc;       // 模型描述
-    std::string _endpoint;        // 模型API endpoint  base url
-};
-
-
-
 // LLM信息
 struct ModelInfo{
     std::string _modelName;       // 模型名称

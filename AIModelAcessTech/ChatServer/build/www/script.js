@@ -1,5 +1,31 @@
 // 配置
-const API_BASE_URL = 'http://192.168.100.238:8080';
+const API_BASE_URL = window.location.origin;
+
+if (!window.hljs) {
+    window.hljs = {
+        getLanguage: () => false,
+        highlight: (code) => ({ value: escapeFallbackHtml(code) }),
+        highlightAuto: (code) => ({ value: escapeFallbackHtml(code) }),
+        highlightElement: () => {}
+    };
+}
+
+if (!window.marked) {
+    window.marked = {
+        Renderer: function() {},
+        setOptions: () => {},
+        parse: (content) => escapeFallbackHtml(content).replace(/\n/g, '<br>')
+    };
+}
+
+function escapeFallbackHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 // 全局变量
 let currentSessionId = null;
@@ -8,6 +34,13 @@ let sessions = [];
 let models = [];
 let selectedModel = null;
 let eventSource = null;
+let offlinePreviewMode = false;
+
+const FALLBACK_MODELS = [
+    { name: 'deepseek-chat', desc: 'DeepSeek 云端对话模型' },
+    { name: 'gpt-4o-mini', desc: 'OpenAI 轻量对话模型' },
+    { name: 'gemini-2.0-flash', desc: 'Google Gemini 快速响应模型' }
+];
 
 // DOM 元素
 const elements = {
@@ -61,7 +94,9 @@ marked.setOptions({
 
 // 重写代码块渲染器，添加包装器
 const renderer = new marked.Renderer();
-const originalCodeRenderer = renderer.code;
+const originalCodeRenderer = renderer.code || function(code) {
+    return `<pre><code>${escapeFallbackHtml(code)}</code></pre>`;
+};
 renderer.code = function(code, language, isEscaped) {
     const langClass = language ? `language-${language}` : '';
     const highlightedCode = originalCodeRenderer.call(this, code, language, isEscaped);
@@ -212,20 +247,45 @@ async function loadModels() {
         
         if (data.success) {
             models = data.data || [];
+            offlinePreviewMode = false;
             renderModelGrid();
         } else {
-            showError('加载模型列表失败: ' + data.message);
+            useFallbackModels('加载模型列表失败: ' + data.message);
         }
     } catch (error) {
         console.error('加载模型列表错误:', error);
-        showError('网络错误，请检查服务器连接');
+        useFallbackModels('后端未连接，已进入前端预览模式');
     }
+}
+
+function useFallbackModels(message) {
+    offlinePreviewMode = true;
+    models = FALLBACK_MODELS;
+    renderModelGrid();
+    showError(message);
 }
 
 // 创建新会话
 async function createNewSession() {
     if (!selectedModel) {
         showError('请选择一个模型');
+        return;
+    }
+
+    if (offlinePreviewMode) {
+        currentSessionId = 'preview-' + Date.now();
+        currentModel = selectedModel;
+        sessions.unshift({
+            id: currentSessionId,
+            model: currentModel,
+            updated_at: Date.now(),
+            first_user_message: '前端预览会话'
+        });
+        renderSessionList();
+        switchToChatInterface();
+        hideModelModal();
+        elements.messagesContainer.innerHTML = '';
+        addMessageToChat('assistant', '当前是前端预览模式：可以选择模型并查看界面流程。要真实对话，请启动后端服务并配置 API key。');
         return;
     }
 

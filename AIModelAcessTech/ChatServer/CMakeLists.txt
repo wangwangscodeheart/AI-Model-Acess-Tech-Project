@@ -20,11 +20,10 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 # 查找依赖库
 find_package(OpenSSL REQUIRED)
 
-# 添加CPPHTTPLIB_OPENSSL_SUPPORT定义
-target_compile_definitions(AIChatServer PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../sdk ${CMAKE_BINARY_DIR}/sdk_build)
 
-# 设置静态库的目录
-link_directories(/usr/local/lib)
+# 添加CPPHTTPLIB_OPENSSL_SUPPORT定义
+target_compile_definitions(AIChatServer PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT SPDLOG_FMT_EXTERNAL)
 
 # 链接库
 target_link_libraries(AIChatServer 
@@ -35,5 +34,4 @@ target_link_libraries(AIChatServer
     gflags
     OpenSSL::SSL 
     OpenSSL::Crypto 
-    sqlite3
-    gflags)
+    sqlite3)

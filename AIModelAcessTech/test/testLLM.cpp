@@ -5,7 +5,6 @@
 #include "../sdk/include/DeepSeekProvider.h"
 #include "../sdk/include/ChatGPTProvider.h"
 #include "../sdk/include/GeminiProvider.h"
-#include "../sdk/include/OllamaLLMProvider.h"
 #include "../sdk/include/util/myLog.h"
 #include "../sdk/include/ChatSDK.h"
 #include <iostream>
@@ -115,41 +114,6 @@ TEST(GeminiProviderTest, sendMessage){
 }
 
 
-TEST(OllamaLLMProviderTest, sendMessage){
-    auto provider = std::make_shared<ai_chat_sdk::OllamaLLMProvider>();
-    ASSERT_TRUE(provider != nullptr);
-
-    std::map<std::string, std::string> modelParam;
-    modelParam["model_name"] = "deepseek-r1:1.5b";
-    modelParam["model_desc"] = "本地部署deepseek-r1:1.5b模型，采用专家混合架构，专注于深度理解与推理";
-    modelParam["endpoint"] = "http://localhost:11434";
-
-    provider->initModel(modelParam);
-    ASSERT_TRUE(provider->isAvailable());
-
-    std::map<std::string, std::string> requestParam = {
-        {"temperature", "0.7"},
-        {"max_tokens", "2048"}
-    };
-    std::vector<ai_chat_sdk::Message> messages;
-    messages.push_back({"user", "你是谁？"});
-
-    // 实例化DeepSeekProvider的对象
-    // 调用sendMessage方法
-    // std::string fullData = provider->sendMessage(messages, requestParam);
-    // ASSERT_FALSE(fullData.empty());
-
-    auto writeChunk = [&](const std::string& chunk, bool last){ 
-        INFO("chunk : {}", chunk);
-        if(last){
-            INFO("[DONE]"); 
-        } 
-    };
-    std::string fullData = provider->sendMessageStream(messages, requestParam, writeChunk);
-    ASSERT_FALSE(fullData.empty());
-    INFO("response : {}", fullData);
-}
-
 #endif
 
 // 测试ChatSDK
@@ -157,7 +121,7 @@ TEST(ChatSDKTest, sendMessage){
     auto sdk = std::make_shared<ai_chat_sdk::ChatSDK>();
     ASSERT_TRUE(sdk != nullptr);
 
-    // 配置支持的模型参数：云模型-deepseek-chat gpt-4o-mini gemini-2.0-flash   Ollama本地接入deepseek-r1:1.5b
+    // 配置支持的模型参数：云模型-deepseek-chat gpt-4o-mini gemini-2.0-flash
     // deepseek-chat
     auto deepseekConfig = std::make_shared<ai_chat_sdk::APIConfig>();
     ASSERT_TRUE(deepseekConfig != nullptr);
@@ -185,23 +149,14 @@ TEST(ChatSDKTest, sendMessage){
     geminiConfig->_temperature = 0.7;
     geminiConfig->_maxTokens = 2048;
 
-    // Ollama本地接入deepseek-r1:1.5b
-    auto ollamaConfig = std::make_shared<ai_chat_sdk::OllamaConfig>();
-    ASSERT_TRUE(ollamaConfig != nullptr);
-    ollamaConfig->_modelName = "deepseek-r1:1.5b";
-    ollamaConfig->_modelDesc = "本地部署deepseek-r1:1.5b模型，采用专家混合架构，专注于深度理解与推理";
-    ollamaConfig->_endpoint = "http://localhost:11434";
-    ollamaConfig->_temperature = 0.7;
-    ollamaConfig->_maxTokens = 2048;
-
     std::vector<std::shared_ptr<ai_chat_sdk::Config>> modelConfigs = {
-        deepseekConfig, chatGPTConfig, geminiConfig, ollamaConfig
+        deepseekConfig, chatGPTConfig, geminiConfig
     };
 
     sdk->initModels(modelConfigs);
 
     // 创建会话
-    auto sessionId = sdk->createSession(ollamaConfig->_modelName);
+    auto sessionId = sdk->createSession(deepseekConfig->_modelName);
     ASSERT_FALSE(sessionId.empty());
 
     std::string message;

@@ -704,9 +704,7 @@ LLMProvider
 
 ├── ChatGPTProvider
 
-├── GeminiProvider
-
-└── OllamaLLMProvider
+└── GeminiProvider
 ```
 
 这样做最大的好处是：

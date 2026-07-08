@@ -10,7 +10,9 @@
 
 namespace ai_chat_server{
 
-ChatServer::ChatServer(const ServerConfig& config){
+ChatServer::ChatServer(const ServerConfig& config)
+    : _config(config)
+{
     _chatSDK = std::make_shared<ai_chat_sdk::ChatSDK>();
 
     auto deepseekConfig = std::make_shared<ai_chat_sdk::APIConfig>();
@@ -34,17 +36,16 @@ ChatServer::ChatServer(const ServerConfig& config){
     geminiConfig->_temperature = config.temperature;
     geminiConfig->_maxTokens = config.maxTokens;
 
-    // Ollama本地接入deepseek-r1:1.5b
-    auto ollamaConfig = std::make_shared<ai_chat_sdk::OllamaConfig>();
-    ollamaConfig->_modelName = config.ollamaModelName;
-    ollamaConfig->_modelDesc = config.ollamaModelDesc;
-    ollamaConfig->_endpoint = config.ollamaEndpoint;
-    ollamaConfig->_temperature = config.temperature;
-    ollamaConfig->_maxTokens = config.maxTokens;
-
-    std::vector<std::shared_ptr<ai_chat_sdk::Config>> modelConfigs = {
-        deepseekConfig, chatGPTConfig, geminiConfig, ollamaConfig
-    };
+    std::vector<std::shared_ptr<ai_chat_sdk::Config>> modelConfigs;
+    if(!deepseekConfig->_apiKey.empty()){
+        modelConfigs.push_back(deepseekConfig);
+    }
+    if(!chatGPTConfig->_apiKey.empty()){
+        modelConfigs.push_back(chatGPTConfig);
+    }
+    if(!geminiConfig->_apiKey.empty()){
+        modelConfigs.push_back(geminiConfig);
+    }
 
     INFO("start init ChatSDK models...");
     if(!_chatSDK->initModels(modelConfigs)){
@@ -446,6 +447,18 @@ void ChatServer::setHttpRoutes(){
     _chatServer->Post("/api/message/async", [this](const httplib::Request& request, httplib::Response& response){
         handleSendMessageStreamRequest(request, response);
     });
+
+    // 设置 CORS 跨域头，允许所有来源
+    _chatServer->Options("/.*", [](const httplib::Request& req, httplib::Response& res) {
+        res.status = 204;
+    });
+
+    _chatServer->set_post_routing_handler([](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    });
+
 }
 
 
